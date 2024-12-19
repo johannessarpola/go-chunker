@@ -32,12 +32,12 @@ type Message struct {
 	msg []byte
 }
 
-type Worker struct {
+type WriteWorker struct {
 	id   int
 	file *os.File
 }
 
-func NewWorker(id int, output Output) (*Worker, error) {
+func NewWorker(id int, output Output) (*WriteWorker, error) {
 	fname := fmt.Sprintf("%s_%d.%s", output.Prefix, id, output.Ext)
 	fpath := path.Join(output.Dir, fname)
 	fopen, err := os.Create(fpath)
@@ -45,16 +45,37 @@ func NewWorker(id int, output Output) (*Worker, error) {
 		return nil, err
 	}
 
-	return &Worker{id: id, file: fopen}, nil
+	return &WriteWorker{id: id, file: fopen}, nil
 }
 
-func (w *Worker) Write(v []byte) error {
+func (w *WriteWorker) Write(v []byte) error {
 	_, err := w.file.Write(append(v, '\n'))
 	return err
 }
 
-func (w *Worker) Close() error {
+func (w *WriteWorker) Close() error {
 	return w.file.Close()
+}
+
+type ReadWorker struct {
+	source Source[string]
+}
+
+func NewReadWorker(source Source[string]) *ReadWorker {
+	return &ReadWorker{source: source}
+}
+
+func (w *ReadWorker) Procue(chan Message) {
+	for {
+		v, i, ok := w.source.Next()
+		if !ok {
+			close(buffer)
+			wg.Done()
+			return
+		}
+		buffer <- Message{idx: i, msg: []byte(v)}
+		i++
+	}
 }
 
 // TODO Fix the typings at some point
@@ -64,7 +85,7 @@ func (np *ParWriter) Write(source Source[string], output Output) error {
 	wg := &sync.WaitGroup{}
 	wg.Add(3) // TODO Improve
 
-	workers := make([]*Worker, np.workers)
+	workers := make([]*WriteWorker, np.workers)
 	for i := 0; i < np.workers; i++ {
 		w, err := NewWorker(i, output)
 		workers[i] = w
