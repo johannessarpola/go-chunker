@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
-	"sync"
+	"time"
 )
 
 type ParWriter struct {
@@ -59,22 +59,23 @@ func (w *WriteWorker) Close() error {
 
 type ReadWorker struct {
 	source Source[string]
+	done   bool
+	out    chan<- Message
 }
 
-func NewReadWorker(source Source[string]) *ReadWorker {
-	return &ReadWorker{source: source}
+func NewReadWorker(source Source[string], out chan<- Message) *ReadWorker {
+	return &ReadWorker{source: source, done: false, out: out}
 }
 
-func (w *ReadWorker) Procue(chan Message) {
+func (w *ReadWorker) Run() {
 	for {
-		v, i, ok := w.source.Next()
+		v, idx, ok := w.source.Next()
 		if !ok {
-			close(buffer)
-			wg.Done()
+			w.done = true
+			close(w.out)
 			return
 		}
-		buffer <- Message{idx: i, msg: []byte(v)}
-		i++
+		w.out <- Message{idx: idx, msg: []byte(v)}
 	}
 }
 
@@ -82,53 +83,66 @@ func (w *ReadWorker) Procue(chan Message) {
 func (np *ParWriter) Write(source Source[string], output Output) error {
 	buffer := make(chan Message, np.workers)
 	errors := make(chan error, np.workers)
-	wg := &sync.WaitGroup{}
-	wg.Add(3) // TODO Improve
 
-	workers := make([]*WriteWorker, np.workers)
+	chans := make([]chan Message, np.workers)
+	for i := 0; i < np.workers; i++ {
+		chans = append(chans, make(chan Message, 1))
+	}
+
+	rworkers := make([]*ReadWorker, np.workers)
+	for _, c := range chans {
+		w := NewReadWorker(source, c)
+		rworkers = append(rworkers, w)
+	}
+
+	allDone := make(chan struct{})
+	go func ()  {
+		for {
+			for _, rw := range rworkers {
+				if !rw.done {
+					return
+				}
+			}
+		}
+
+		allDone<- struct{}{}
+		close(allDone)
+	}
+
+	wworkers := make([]*WriteWorker, np.workers)
 	for i := 0; i < np.workers; i++ {
 		w, err := NewWorker(i, output)
-		workers[i] = w
+		wworkers[i] = w
 		if err != nil {
 			// TODO
 			return err
 		}
 	}
 
-	// TODO This can be parallized
-	go func(source Source[string]) {
-		for {
-			v, i, ok := source.Next()
-			if !ok {
-				close(buffer)
-				wg.Done()
-				return
-			}
-			buffer <- Message{idx: i, msg: []byte(v)}
-			i++
-		}
-	}(source)
+	for _, rworker := range rworkers {
+		go rworker.Produce(buffer)
+	}
 
 	go func(buffer chan Message, size int) {
 		defer close(errors)
+		wwg.Add(1)
 		for v := range buffer {
 			idx := v.idx
 			dst := (idx / size) % np.workers
-			err := workers[dst].Write(v.msg)
+			err := wworkers[dst].Write(v.msg)
 			if err != nil {
 				errors <- err
 			}
 		}
-		wg.Done()
+		wwg.Done()
 	}(buffer, output.Size)
 
 	go func() {
 		for err := range errors {
 			log.Println(err)
 		}
-		wg.Done()
 	}()
-	wg.Wait()
-	// TODO Cleanup
+
+	rwg.Wait()
 	return nil
 }
