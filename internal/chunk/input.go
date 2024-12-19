@@ -8,25 +8,28 @@ import (
 )
 
 type Source[T any] interface {
-	Next() (T, bool)
+	Next() (T, int, bool)
 }
 
 type FileSource struct {
 	mu      sync.Mutex
+	idx     int
 	file    *os.File
 	scanner *bufio.Scanner
 }
 
-func (f *FileSource) Next() (string, bool) {
+func (f *FileSource) Next() (string, int, bool) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	hasToken := f.scanner.Scan()
 	if !hasToken {
 		_ = f.file.Close()
 		f.scanner = nil
-		return "", false
+		return "", 0, false
 	}
-	return f.scanner.Text(), true
+	oi := f.idx
+	f.idx++
+	return f.scanner.Text(), oi, true
 }
 
 func ReadFile(filename string) (Source[string], error) {

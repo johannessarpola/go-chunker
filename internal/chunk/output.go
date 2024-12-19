@@ -76,9 +76,8 @@ func (np *ParWriter) Write(source Source[string], output Output) error {
 
 	// TODO This can be parallized
 	go func(source Source[string]) {
-		i := 0
 		for {
-			v, ok := source.Next()
+			v, i, ok := source.Next()
 			if !ok {
 				close(buffer)
 				wg.Done()

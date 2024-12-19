@@ -41,7 +41,7 @@ func TestReadFile(t *testing.T) {
 
 	cnt := 0
 	for {
-		v, ok := s.Next()
+		v, _, ok := s.Next()
 		fmt.Println(v)
 		if !ok {
 			break
