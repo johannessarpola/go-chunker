@@ -66,7 +66,7 @@ func (w *WriteWorker) Run(onDone func(w *WriteWorker), onErr func(w *WriteWorker
 
 	err := w.writeMeta(mn, mx, start)
 	if err != nil {
-		fmt.Errorf("error writing metadata; %e", err)
+		fmt.Printf("error writing metadata; %e", err)
 	}
 }
 
