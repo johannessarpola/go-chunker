@@ -49,6 +49,7 @@ func (np *ParWriter) Write(source Source[string], output Output) error {
 	wg := sync.WaitGroup{}
 	wg.Add(len(writers))
 	for _, worker := range writers {
+		// run the writer
 		go worker.Run(
 			func(w *WriteWorker) {
 				fmt.Printf("worker %d done, wrote to %s\n", w.id, w.file.Name())
