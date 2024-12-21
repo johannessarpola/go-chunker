@@ -62,18 +62,14 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	workerTotal := total / int64(len(writers))
 
 	for _, worker := range writers {
-		name := fmt.Sprintf("Bar#%d:", worker.id)
+		name := fmt.Sprintf("worker %d:", worker.id)
 		bar := p.AddBar(int64(workerTotal),
 			mpb.PrependDecorators(
-				// simple name decorator
-				decor.Name(name),
-				// decor.DSyncWidth bit enables column width synchronization
-				decor.Percentage(decor.WCSyncSpace),
+				decor.Name(name, decor.WC{C: decor.DindentRight | decor.DextraSpace}),
+				decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
 			),
 			mpb.AppendDecorators(
-				// replace ETA decorator with "done" message, OnComplete event
 				decor.OnComplete(
-					// ETA decorator with ewma age of 30
 					decor.EwmaETA(decor.ET_STYLE_GO, 30, decor.WCSyncWidth), "done",
 				),
 			),
@@ -84,7 +80,6 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 		go worker.Run(
 			func(m *Message) {
 				bar.EwmaIncrement(time.Since(start))
-				time.Sleep(10 * time.Millisecond)
 			},
 			func(w *WriteWorker, err error) {
 				//fmt.Printf("worker %d done, wrote to %s\n", w.id, w.file.Name())
