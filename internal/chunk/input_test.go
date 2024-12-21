@@ -1,53 +1,29 @@
 package chunk
 
 import (
-	"bufio"
-	"fmt"
-	"github.com/stretchr/testify/require"
-	"os"
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func countLines(filePath string) (int, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return 0, fmt.Errorf("failed to open file: %w", err)
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	lineCount := 0
-
-	for scanner.Scan() {
-		lineCount++
-	}
-
-	if err := scanner.Err(); err != nil {
-		return 0, fmt.Errorf("error reading file: %w", err)
-	}
-
-	return lineCount, nil
-}
-
 func TestReadFile(t *testing.T) {
-
 	td := path.Join("testdata", "data.txt")
-	lc, err := countLines(td)
-	require.NoError(t, err)
+	rs := <-asyncCountLines(td)
+
+	require.NoError(t, rs.Err())
 
 	s, err := ReadFile(td)
 	require.NoError(t, err)
 
-	cnt := 0
+	cnt := int64(0)
 	for {
-		v, _, ok := s.Next()
-		fmt.Println(v)
+		_, _, ok := s.Next()
 		if !ok {
 			break
 		}
 		cnt++
 	}
 
-	require.Equal(t, lc, cnt)
+	require.Equal(t, rs.Value(), cnt)
 }
