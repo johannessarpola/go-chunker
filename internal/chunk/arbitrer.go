@@ -13,13 +13,13 @@ func NewArbitrer(source Source[string]) *Arbitrer {
 }
 
 // Run runs the arbitrer.
-func (a *Arbitrer) Run(chunkSize int, chans ...chan Message) {
+func (a *Arbitrer) Run(chans ...chan Message) {
 	channelCount := len(chans)
 	for {
 		val, idx, ok := a.source.Next()
 		// dst determines the correct channel to send the message so the order is not shuffled.
 		// For example with idx = 0 it would end in the first channel.
-		dst := (idx / chunkSize) % channelCount
+		dst := (idx / channelCount) % channelCount
 		if !ok {
 			for _, c := range chans {
 				close(c)

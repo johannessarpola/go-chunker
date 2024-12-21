@@ -1,13 +1,14 @@
 package chunk
 
 import (
-	"github.com/stretchr/testify/require"
 	"path"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestParWriter_Write(t *testing.T) {
-	td := path.Join("testdata", "data.txt")
+	td := path.Join("testdata", "data_2.txt")
 	source, err := ReadFile(td)
 	require.NoError(t, err)
 
@@ -15,7 +16,6 @@ func TestParWriter_Write(t *testing.T) {
 		Prefix: "data",
 		Dir:    "out",
 		Ext:    "txt",
-		Size:   10,
 	}
 
 	workers := 10

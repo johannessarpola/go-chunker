@@ -17,7 +17,6 @@ type Output struct {
 	Prefix string
 	Dir    string
 	Ext    string
-	Size   int
 }
 
 func NewOutput(prefix, dir, ext string) Output {
@@ -61,7 +60,7 @@ func (np *ParWriter) Write(source Source[string], output Output) error {
 		)
 	}
 
-	arbitrer.Run(output.Size, chans...)
+	arbitrer.Run(chans...)
 
 	wg.Wait()
 	return nil
