@@ -3,6 +3,10 @@ package chunk
 import (
 	"fmt"
 	"sync"
+	"time"
+
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
 type ParWriter struct {
@@ -50,35 +54,40 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	wg.Add(len(writers))
 
 	// progress bar
-	//p := mpb.New(mpb.WithWaitGroup(&wg))
-	//total := 100 // TODO Fix
+	p := mpb.New(mpb.WithWaitGroup(&wg))
+	total, err := source.Total()
+	if err != nil {
+		return err
+	}
+	workerTotal := total / int64(len(writers))
 
 	for _, worker := range writers {
-		// name := fmt.Sprintf("Bar#%d:", worker.id)
-		// bar := p.AddBar(int64(total),
-		// 	mpb.PrependDecorators(
-		// 		// simple name decorator
-		// 		decor.Name(name),
-		// 		// decor.DSyncWidth bit enables column width synchronization
-		// 		decor.Percentage(decor.WCSyncSpace),
-		// 	),
-		// 	mpb.AppendDecorators(
-		// 		// replace ETA decorator with "done" message, OnComplete event
-		// 		decor.OnComplete(
-		// 			// ETA decorator with ewma age of 30
-		// 			decor.EwmaETA(decor.ET_STYLE_GO, 30, decor.WCSyncWidth), "done",
-		// 		),
-		// 	),
-		// )
+		name := fmt.Sprintf("Bar#%d:", worker.id)
+		bar := p.AddBar(int64(workerTotal),
+			mpb.PrependDecorators(
+				// simple name decorator
+				decor.Name(name),
+				// decor.DSyncWidth bit enables column width synchronization
+				decor.Percentage(decor.WCSyncSpace),
+			),
+			mpb.AppendDecorators(
+				// replace ETA decorator with "done" message, OnComplete event
+				decor.OnComplete(
+					// ETA decorator with ewma age of 30
+					decor.EwmaETA(decor.ET_STYLE_GO, 30, decor.WCSyncWidth), "done",
+				),
+			),
+		)
 
-		//start := time.Now()
+		start := time.Now()
 		// run the writer
 		go worker.Run(
 			func(m *Message) {
-				//bar.EwmaIncrement(time.Since(start))
+				bar.EwmaIncrement(time.Since(start))
+				time.Sleep(10 * time.Millisecond)
 			},
 			func(w *WriteWorker, err error) {
-				fmt.Printf("worker %d done, wrote to %s\n", w.id, w.file.Name())
+				//fmt.Printf("worker %d done, wrote to %s\n", w.id, w.file.Name())
 				wg.Done()
 			},
 		)
@@ -86,7 +95,7 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 
 	arbitrer.Run(chans...)
 
-	wg.Wait()
+	p.Wait()
 	return nil
 
 }

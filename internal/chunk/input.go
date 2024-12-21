@@ -9,11 +9,13 @@ import (
 
 type Source[T any] interface {
 	Next() (T, int, bool)
+	Total() (int64, error)
 }
 
 type FileSource struct {
 	mu      sync.Mutex
 	idx     int
+	fpath   string
 	file    *os.File
 	scanner *bufio.Scanner
 }
@@ -32,6 +34,11 @@ func (f *FileSource) Next() (string, int, bool) {
 	return f.scanner.Text(), oi, true
 }
 
+func (f *FileSource) Total() (int64, error) {
+	rs := <-asyncCountLines(f.fpath)
+	return rs.Get()
+}
+
 func ReadFile(filename string) (Source[string], error) {
 	file, err := os.Open(filename)
 	if err != nil {
@@ -42,6 +49,7 @@ func ReadFile(filename string) (Source[string], error) {
 
 	return &FileSource{
 		mu:      sync.Mutex{},
+		fpath:   filename,
 		file:    file,
 		scanner: scanner,
 	}, nil
