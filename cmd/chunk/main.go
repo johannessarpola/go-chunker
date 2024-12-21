@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"github.com/urfave/cli/v3"
 	"log"
 	"os"
+	"path"
+
+	"github.com/johannessarpola/go-chunker/internal/chunk"
+	"github.com/urfave/cli/v3"
 )
 
 func main() {
@@ -35,9 +37,26 @@ func main() {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			fmt.Printf("input: %s\n", input)
-			fmt.Printf("output: %s\n", output)
-			fmt.Printf("size: %d\n", size)
+
+			td := path.Join("data.txt")
+			source, err := chunk.ReadFile(td)
+			if err != nil {
+				return err
+			}
+
+			o := chunk.Output{
+				Prefix: "data",
+				Dir:    "out",
+				Ext:    "txt",
+			}
+
+			workers := 10
+			pw := chunk.NewParWriter(workers)
+
+			err = pw.Run(source, o)
+			if err != nil {
+				return err
+			}
 			return nil
 		},
 	}
@@ -45,4 +64,5 @@ func main() {
 	if err := cmd.Run(context.Background(), os.Args); err != nil {
 		log.Fatal(err)
 	}
+
 }

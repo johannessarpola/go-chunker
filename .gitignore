@@ -50,3 +50,4 @@ go.work
 .vscode/
 
 **/out
+data.txt

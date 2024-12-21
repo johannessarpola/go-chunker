@@ -6,12 +6,11 @@ import (
 )
 
 type ParWriter struct {
-	workers   int
-	printbars bool
+	workers int
 }
 
-func NewParWriter(workers int, printbars bool) *ParWriter {
-	return &ParWriter{workers: workers, printbars: printbars}
+func NewParWriter(workers int) *ParWriter {
+	return &ParWriter{workers: workers}
 }
 
 func initializeChannels(workers int) []chan Message {
@@ -36,7 +35,7 @@ func initializeWorkers(workers int, output Output, chans []chan Message) ([]*Wri
 }
 
 // TODO Fix the typings at some point
-func (np *ParWriter) Write(source Source[string], output Output) error {
+func (np *ParWriter) Run(source Source[string], output Output) error {
 	chans := initializeChannels(np.workers)
 
 	writers, err := initializeWorkers(np.workers, output, chans)
@@ -45,18 +44,42 @@ func (np *ParWriter) Write(source Source[string], output Output) error {
 	}
 
 	arbitrer := NewArbitrer(source)
+
 	// start writers
 	wg := sync.WaitGroup{}
 	wg.Add(len(writers))
+
+	// progress bar
+	//p := mpb.New(mpb.WithWaitGroup(&wg))
+	//total := 100 // TODO Fix
+
 	for _, worker := range writers {
+		// name := fmt.Sprintf("Bar#%d:", worker.id)
+		// bar := p.AddBar(int64(total),
+		// 	mpb.PrependDecorators(
+		// 		// simple name decorator
+		// 		decor.Name(name),
+		// 		// decor.DSyncWidth bit enables column width synchronization
+		// 		decor.Percentage(decor.WCSyncSpace),
+		// 	),
+		// 	mpb.AppendDecorators(
+		// 		// replace ETA decorator with "done" message, OnComplete event
+		// 		decor.OnComplete(
+		// 			// ETA decorator with ewma age of 30
+		// 			decor.EwmaETA(decor.ET_STYLE_GO, 30, decor.WCSyncWidth), "done",
+		// 		),
+		// 	),
+		// )
+
+		//start := time.Now()
 		// run the writer
 		go worker.Run(
-			func(w *WriteWorker) {
-				fmt.Printf("worker %d done, wrote to %s\n", w.id, w.file.Name())
-				wg.Done()
+			func(m *Message) {
+				//bar.EwmaIncrement(time.Since(start))
 			},
 			func(w *WriteWorker, err error) {
-				fmt.Printf("worker %d for %s failed: %e\n", w.id, w.file.Name(), err)
+				fmt.Printf("worker %d done, wrote to %s\n", w.id, w.file.Name())
+				wg.Done()
 			},
 		)
 	}

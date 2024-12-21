@@ -46,10 +46,10 @@ type writerMeta struct {
 }
 
 // Run runs the worker, writes the output file and companion metadata json file. `onDone` is called when done and `ònErr` if there was an error.
-func (w *WriteWorker) Run(onDone func(w *WriteWorker), onErr func(w *WriteWorker, err error)) {
+func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWorker, err error)) {
 	defer func() {
 		w.file.Close()
-		onDone(w)
+		onComplete(w, nil)
 	}()
 	start := time.Now()
 	mx, mn := -1, -1
@@ -58,9 +58,10 @@ func (w *WriteWorker) Run(onDone func(w *WriteWorker), onErr func(w *WriteWorker
 			mn = m.idx
 		}
 		if _, err := w.file.Write(append(m.msg, '\n')); err != nil {
-			onErr(w, err)
+			onComplete(w, err)
 			break
 		}
+		onHandled(&m)
 		mx = m.idx
 	}
 

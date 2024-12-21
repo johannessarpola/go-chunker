@@ -19,8 +19,8 @@ func TestParWriter_Write(t *testing.T) {
 	}
 
 	workers := 10
-	pw := NewParWriter(workers, false)
+	pw := NewParWriter(workers)
 
-	err = pw.Write(source, o)
+	err = pw.Run(source, o)
 	require.NoError(t, err)
 }
