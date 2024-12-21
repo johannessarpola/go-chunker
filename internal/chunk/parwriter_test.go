@@ -8,7 +8,7 @@ import (
 )
 
 func TestParWriter_Write(t *testing.T) {
-	td := path.Join("testdata", "data_2.txt")
+	td := path.Join("testdata", "data.txt")
 	source, err := ReadFile(td)
 	require.NoError(t, err)
 
@@ -19,7 +19,7 @@ func TestParWriter_Write(t *testing.T) {
 	}
 
 	workers := 10
-	pw := NewParWriter(workers)
+	pw := NewParWriter(workers, false)
 
 	err = pw.Write(source, o)
 	require.NoError(t, err)
