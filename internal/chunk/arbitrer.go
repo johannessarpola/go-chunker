@@ -26,7 +26,7 @@ func (a *Arbitrer) Run(chans ...chan Message) {
 			}
 			return
 		}
-		chans[dst] <- Message{msg: []byte(val), idx: idx}
+		chans[dst] <- NewMessage(idx, []byte(val))
 	}
 
 }
