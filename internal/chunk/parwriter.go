@@ -59,6 +59,7 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	if err != nil {
 		return err
 	}
+
 	workerTotal := total / int64(len(writers))
 
 	for _, worker := range writers {
@@ -88,7 +89,7 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 		)
 	}
 
-	arbitrer.Run(chans...)
+	arbitrer.Run(workerTotal, chans...)
 
 	p.Wait()
 	return nil

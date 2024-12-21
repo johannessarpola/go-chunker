@@ -29,9 +29,9 @@ func (f *FileSource) Next() (string, int, bool) {
 		f.scanner = nil
 		return "", 0, false
 	}
-	oi := f.idx
+	idx := f.idx
 	f.idx++
-	return f.scanner.Text(), oi, true
+	return f.scanner.Text(), idx, true
 }
 
 func (f *FileSource) Total() (int64, error) {

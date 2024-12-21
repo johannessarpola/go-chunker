@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 
 	"github.com/johannessarpola/go-chunker/internal/chunk"
 	"github.com/urfave/cli/v3"
@@ -38,16 +39,19 @@ func main() {
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 
-			td := path.Join("data.txt")
+			td := path.Join(input)
+			base := path.Base(input)
+			ext := path.Ext(input)
+
 			source, err := chunk.ReadFile(td)
 			if err != nil {
 				return err
 			}
 
 			o := chunk.Output{
-				Prefix: "data",
-				Dir:    "out",
-				Ext:    "txt",
+				Prefix: strings.Replace(base, ext, "", 1),
+				Dir:    output,
+				Ext:    ext,
 			}
 
 			workers := 10
