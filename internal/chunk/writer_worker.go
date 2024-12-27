@@ -21,7 +21,7 @@ type WriteWorker struct {
 
 // NewWriteWorker creates a new WriteWorker and determines the output file names.
 func NewWriteWorker(id int, input <-chan Message, output Output) (*WriteWorker, error) {
-	fname := fmt.Sprintf("%s_%d.%s", output.Prefix, id, output.Ext)
+	fname := fmt.Sprintf("%s_%d%s", output.Prefix, id, output.Ext)
 	mfname := fmt.Sprintf("%s_%d_%s.%s", output.Prefix, id, metaSuffix, metaExt)
 	fopen, err := os.Create(path.Join(output.Dir, fname))
 	if err != nil {

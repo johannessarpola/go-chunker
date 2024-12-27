@@ -60,7 +60,7 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	workerTotal := np.total / int64(len(writers))
 
 	for _, worker := range writers {
-		name := fmt.Sprintf("worker %d:", worker.id)
+		name := fmt.Sprintf("writer-%d:", worker.id)
 		bar := p.AddBar(int64(workerTotal),
 			mpb.PrependDecorators(
 				decor.Name(name, decor.WC{C: decor.DindentRight | decor.DextraSpace}),
