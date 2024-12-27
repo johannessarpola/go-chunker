@@ -26,7 +26,7 @@ func (f *FileSource) Next() (string, int, bool) {
 	hasToken := f.scanner.Scan()
 	if !hasToken {
 		_ = f.file.Close()
-		return "", 0, false
+		return "", -1, false
 	}
 	idx := f.idx
 	f.idx++

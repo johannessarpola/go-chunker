@@ -41,11 +41,12 @@ func NewWriteWorker(id int, input <-chan Message, output Output) (*WriteWorker, 
 
 // writerMeta is the metadata for the worker.
 type writerMeta struct {
-	ID       int    `json:"id"`
-	File     string `json:"file"`
-	Min      int    `json:"min"`
-	Max      int    `json:"max"`
-	Duration string `json:"duration"`
+	ID             int    `json:"id"`
+	File           string `json:"file"`
+	Min            int    `json:"min"`
+	Max            int    `json:"max"`
+	AliveDuration  string `json:"alive_duration"`
+	ActiveDuration string `json:"active_duration"`
 }
 
 // Run runs the worker, writes the output file and companion metadata json file. `onDone` is called when done and `ònErr` if there was an error.
@@ -55,8 +56,14 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 		onComplete(w, nil)
 	}()
 	start := time.Now()
+	active := time.Time{}
 	mx, mn := -1, -1
 	for m := range w.input {
+
+		if active == (time.Time{}) { // first message or after last one?
+			active = time.Now()
+		}
+
 		if mn < 0 {
 			mn = m.idx
 		}
@@ -68,23 +75,24 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 	}
 
 	end := time.Now()
-	err := w.writeMeta(mn, mx, start, end)
+	err := w.writeMeta(mn, mx, start, active, end)
 	if err != nil {
 		fmt.Printf("error writing metadata; %e", err)
 	}
 }
 
-func (w *WriteWorker) writeMeta(mn, mx int, start, end time.Time) error {
+func (w *WriteWorker) writeMeta(mn, mx int, start, activeStart, end time.Time) error {
 	defer w.metaFile.Close()
 
 	enc := json.NewEncoder(w.metaFile)
 	enc.SetIndent("", "    ")
 	err := enc.Encode(&writerMeta{
-		ID:       w.id,
-		Max:      mx,
-		Min:      mn,
-		File:     w.file.Name(),
-		Duration: end.Sub(start).String(),
+		ID:             w.id,
+		Max:            mx,
+		Min:            mn,
+		File:           w.file.Name(),
+		AliveDuration:  time.Since(start).String(),
+		ActiveDuration: end.Sub(activeStart).String(),
 	})
 	if err != nil {
 		return err
