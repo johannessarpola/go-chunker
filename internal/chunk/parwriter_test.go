@@ -18,8 +18,11 @@ func TestParWriter_Write(t *testing.T) {
 		Ext:    "txt",
 	}
 
+	total, err := source.Total()
+	require.NoError(t, err)
+
 	workers := 10
-	pw := NewParWriter(workers)
+	pw := NewParWriter(workers, total)
 
 	err = pw.Run(source, o)
 	require.NoError(t, err)

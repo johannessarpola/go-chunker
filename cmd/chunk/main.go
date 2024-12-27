@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"math"
 	"os"
 	"path"
 	"strings"
@@ -54,8 +55,13 @@ func main() {
 				Ext:    ext,
 			}
 
-			workers := 10
-			pw := chunk.NewParWriter(workers)
+			total, err := source.Total()
+			if err != nil {
+				return err
+			}
+
+			workers := math.Ceil(float64(total) / float64(size))
+			pw := chunk.NewParWriter(int(workers), total)
 
 			err = pw.Run(source, o)
 			if err != nil {

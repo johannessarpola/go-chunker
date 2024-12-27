@@ -11,10 +11,11 @@ import (
 
 type ParWriter struct {
 	workers int
+	total   int64
 }
 
-func NewParWriter(workers int) *ParWriter {
-	return &ParWriter{workers: workers}
+func NewParWriter(workers int, total int64) *ParWriter {
+	return &ParWriter{workers: workers, total: total}
 }
 
 func initializeChannels(workers int) []chan Message {
@@ -55,12 +56,8 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 
 	// progress bar
 	p := mpb.New(mpb.WithWaitGroup(&wg))
-	total, err := source.Total()
-	if err != nil {
-		return err
-	}
 
-	workerTotal := total / int64(len(writers))
+	workerTotal := np.total / int64(len(writers))
 
 	for _, worker := range writers {
 		name := fmt.Sprintf("worker %d:", worker.id)
