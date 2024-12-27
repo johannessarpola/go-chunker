@@ -22,7 +22,7 @@ func (a *Arbitrer) Run(total int64, chans ...chan Message) {
 	wg := sync.WaitGroup{}
 	wg.Add(a.workers)
 
-	for _ = range a.workers {
+	for range a.workers {
 		go func() {
 			defer wg.Done()
 			for {
