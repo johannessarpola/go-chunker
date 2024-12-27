@@ -26,11 +26,11 @@ func initializeChannels(workers int) []chan Message {
 	return channels
 }
 
-func initializeWorkers(workers int, output Output, chans []chan Message) ([]*WriteWorker, error) {
-	writers := make([]*WriteWorker, workers)
+func initializeWorkers(output Output, chans []chan Message) ([]*WriteWorker, error) {
+	writers := make([]*WriteWorker, len(chans))
 	var err error
-	for i := 0; i < workers; i++ {
-		writers[i], err = NewWriteWorker(i, chans[i], output)
+	for i, c := range chans {
+		writers[i], err = NewWriteWorker(i, c, output)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create writer: %w", err)
 		}
@@ -43,7 +43,7 @@ func initializeWorkers(workers int, output Output, chans []chan Message) ([]*Wri
 func (np *ParWriter) Run(source Source[string], output Output) error {
 	chans := initializeChannels(np.workers)
 
-	writers, err := initializeWorkers(np.workers, output, chans)
+	writers, err := initializeWorkers(output, chans)
 	if err != nil {
 		return fmt.Errorf("failed to create workers: %w", err)
 	}
@@ -57,11 +57,11 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	// progress bar
 	p := mpb.New(mpb.WithWaitGroup(&wg))
 
-	workerTotal := np.total / int64(len(writers))
+	wt := np.total / int64(len(writers))
 
 	for _, worker := range writers {
 		name := fmt.Sprintf("writer-%d:", worker.id)
-		bar := p.AddBar(int64(workerTotal),
+		bar := p.AddBar(wt,
 			mpb.PrependDecorators(
 				decor.Name(name, decor.WC{C: decor.DindentRight | decor.DextraSpace}),
 				decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
@@ -86,7 +86,7 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 		)
 	}
 
-	arbitrer.Run(workerTotal, chans...)
+	arbitrer.Run(wt, chans...)
 
 	p.Wait()
 	return nil
