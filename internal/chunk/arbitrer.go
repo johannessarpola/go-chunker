@@ -27,11 +27,11 @@ func (a *Arbitrer) Run(total int64, chans ...chan Message) {
 			defer wg.Done()
 			for {
 				val, idx, ok := a.source.Next()
-				// dst determines the correct channel to send the message so the order is not shuffled.
-				// For example with idx = 0 it would end in the first channel.
 				if !ok {
 					return
 				}
+				// dst determines the correct channel to send the message so the order is not shuffled.
+				// For example with idx = 0 it would end in the first channel.
 				dst := idx / int(total)
 				// TODO ugly fix, figure out later
 				if dst >= channelCount {
