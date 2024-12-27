@@ -21,7 +21,7 @@ func NewParWriter(workers int, total int64) *ParWriter {
 func initializeChannels(workers int) []chan Message {
 	channels := make([]chan Message, workers)
 	for i := 0; i < workers; i++ {
-		channels[i] = make(chan Message)
+		channels[i] = make(chan Message, 1)
 	}
 	return channels
 }
@@ -39,8 +39,6 @@ func initializeWorkers(output Output, chans []chan Message) ([]*WriteWorker, err
 
 }
 
-const arbiterCount = 4 // TODO
-
 // TODO Fix the typings at some point
 func (np *ParWriter) Run(source Source[string], output Output) error {
 	chans := initializeChannels(np.workers)
@@ -50,6 +48,11 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 		return fmt.Errorf("failed to create workers: %w", err)
 	}
 
+	arbiterCount := np.workers / 2 // Let's assume 1 arbitrer per 2 workers
+	if arbiterCount <= 0 {
+		// Fallback to 1
+		arbiterCount = 1
+	}
 	arbitrer := NewArbitrer(arbiterCount, source)
 
 	// start writers

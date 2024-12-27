@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,6 +16,7 @@ const metaSuffix = "meta"
 type WriteWorker struct {
 	id       int
 	file     *os.File
+	writer   *bufio.Writer
 	metaFile *os.File
 	input    <-chan Message
 }
@@ -33,7 +35,8 @@ func NewWriteWorker(id int, input <-chan Message, output Output) (*WriteWorker, 
 		return nil, err
 	}
 
-	return &WriteWorker{id: id, file: fopen, input: input, metaFile: fmopen}, nil
+	buf := bufio.NewWriter(fopen)
+	return &WriteWorker{id: id, file: fopen, writer: buf, input: input, metaFile: fmopen}, nil
 }
 
 // writerMeta is the metadata for the worker.
@@ -57,7 +60,7 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 		if mn < 0 {
 			mn = m.idx
 		}
-		if _, err := w.file.Write(append(m.msg, '\n')); err != nil {
+		if _, err := w.writer.Write(append(m.msg, '\n')); err != nil {
 			break
 		}
 		onHandled(&m)
