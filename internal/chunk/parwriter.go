@@ -39,6 +39,8 @@ func initializeWorkers(output Output, chans []chan Message) ([]*WriteWorker, err
 
 }
 
+const arbiterCount = 4 // TODO
+
 // TODO Fix the typings at some point
 func (np *ParWriter) Run(source Source[string], output Output) error {
 	chans := initializeChannels(np.workers)
@@ -48,7 +50,7 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 		return fmt.Errorf("failed to create workers: %w", err)
 	}
 
-	arbitrer := NewArbitrer(source)
+	arbitrer := NewArbitrer(arbiterCount, source)
 
 	// start writers
 	wg := sync.WaitGroup{}
