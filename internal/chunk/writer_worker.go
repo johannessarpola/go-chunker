@@ -67,14 +67,16 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 		mx = m.idx
 	}
 
-	err := w.writeMeta(mn, mx, start)
+	end := time.Now()
+	err := w.writeMeta(mn, mx, start, end)
 	if err != nil {
 		fmt.Printf("error writing metadata; %e", err)
 	}
 }
 
-func (w *WriteWorker) writeMeta(mn, mx int, start time.Time) error {
+func (w *WriteWorker) writeMeta(mn, mx int, start, end time.Time) error {
 	defer w.metaFile.Close()
+
 	enc := json.NewEncoder(w.metaFile)
 	enc.SetIndent("", "    ")
 	err := enc.Encode(&writerMeta{
@@ -82,7 +84,7 @@ func (w *WriteWorker) writeMeta(mn, mx int, start time.Time) error {
 		Max:      mx,
 		Min:      mn,
 		File:     w.file.Name(),
-		Duration: time.Since(start).String(),
+		Duration: end.Sub(start).String(),
 	})
 	if err != nil {
 		return err
