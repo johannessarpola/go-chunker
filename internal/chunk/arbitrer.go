@@ -29,16 +29,13 @@ func (a *Arbitrer) Run(total int64, chans ...chan Message) {
 				val, idx, ok := a.source.Next()
 				// dst determines the correct channel to send the message so the order is not shuffled.
 				// For example with idx = 0 it would end in the first channel.
+				if !ok {
+					return
+				}
 				dst := idx / int(total)
-
 				// TODO ugly fix, figure out later
 				if dst >= channelCount {
 					dst = channelCount - 1
-				}
-
-				if !ok {
-
-					return
 				}
 				chans[dst] <- NewMessage(idx, []byte(val))
 			}
