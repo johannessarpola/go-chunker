@@ -29,7 +29,7 @@ func TestReadFile(t *testing.T) {
 }
 
 func TestReadDir(t *testing.T) {
-	td := path.Join("testdata", "data.txt")
+	td := path.Join("testdata", "folder")
 	rs := <-asyncCountLines(td)
 
 	require.NoError(t, rs.Err())

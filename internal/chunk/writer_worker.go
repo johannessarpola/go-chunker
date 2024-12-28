@@ -43,8 +43,8 @@ func NewWriteWorker(id int, input <-chan Message, output Output) (*WriteWorker, 
 type writerMeta struct {
 	ID             int    `json:"id"`
 	File           string `json:"file"`
-	Min            int    `json:"min"`
-	Max            int    `json:"max"`
+	Min            int64  `json:"min"`
+	Max            int64  `json:"max"`
 	AliveDuration  string `json:"alive_duration"`
 	ActiveDuration string `json:"active_duration"`
 }
@@ -58,7 +58,7 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 	}()
 	start := time.Now()
 	active := time.Time{}
-	mx, mn := -1, -1
+	mx, mn := int64(-1), int64(-1)
 	for m := range w.input {
 
 		if active == (time.Time{}) { // first message or after last one?
@@ -82,7 +82,7 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 	}
 }
 
-func (w *WriteWorker) writeMeta(mn, mx int, start, activeStart, end time.Time) error {
+func (w *WriteWorker) writeMeta(mn, mx int64, start, activeStart, end time.Time) error {
 	defer w.metaFile.Close()
 
 	enc := json.NewEncoder(w.metaFile)

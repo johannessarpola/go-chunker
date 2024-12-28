@@ -4,33 +4,30 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"sync"
+	"sync/atomic"
 )
 
 type Source[T any] interface {
-	Next() (T, int, bool)
+	Next() (T, int64, bool)
 	Total() (int64, error)
 }
 
-type FileSource struct {
-	mu      sync.Mutex
-	idx     int
-	fpath   string
-	file    *os.File
-	scanner *bufio.Scanner
+type Merger[T any] interface {
+	Merge(src ...Source[T])
 }
 
-func (f *FileSource) Next() (string, int, bool) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	hasToken := f.scanner.Scan()
-	if !hasToken {
-		_ = f.file.Close()
+type FileSource struct {
+	idx   atomic.Int64
+	fpath string
+	fread <-chan string
+}
+
+func (f *FileSource) Next() (string, int64, bool) {
+	line, ok := <-f.fread
+	if !ok {
 		return "", -1, false
 	}
-	idx := f.idx
-	f.idx++
-	return f.scanner.Text(), idx, true
+	return line, f.Inc(), true
 }
 
 func (f *FileSource) Total() (int64, error) {
@@ -38,10 +35,37 @@ func (f *FileSource) Total() (int64, error) {
 	return rs.Get()
 }
 
+// Inc returns the index and then increments it.
+func (f *FileSource) Inc() int64 {
+	prev := f.idx.Load()
+	f.idx.Add(1)
+	return prev
+}
+
+func (f *FileSource) SetIndex(idx int64) {
+	f.idx.Store(idx)
+}
+
+func (f *FileSource) Index() int64 {
+	return f.idx.Load()
+}
+
 func ReadDir(folder string) (Source[string], error) {
 	// TODO
 	return nil, nil
 }
+
+func preread(f *os.File, out chan<- string) {
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		out <- scanner.Text()
+	}
+	close(out)
+	_ = f.Close()
+}
+
+// TODO configurable buffer?
+const prereadBufferSz = 64
 
 func ReadFile(filename string) (Source[string], error) {
 	file, err := os.Open(filename)
@@ -49,12 +73,12 @@ func ReadFile(filename string) (Source[string], error) {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 
-	scanner := bufio.NewScanner(file)
+	fread := make(chan string, prereadBufferSz)
+	// Preread the file into a channel
+	go preread(file, fread)
 
 	return &FileSource{
-		mu:      sync.Mutex{},
-		fpath:   filename,
-		file:    file,
-		scanner: scanner,
+		fpath: filename,
+		fread: fread,
 	}, nil
 }

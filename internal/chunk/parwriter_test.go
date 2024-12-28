@@ -21,7 +21,7 @@ func TestParWriter_Write(t *testing.T) {
 	total, err := source.Total()
 	require.NoError(t, err)
 
-	workers := 4
+	workers := 10
 	pw := NewParWriter(workers, total)
 
 	err = pw.Run(source, o)
