@@ -53,7 +53,7 @@ func preread(f *os.File, out chan<- string) {
 // TODO configurable buffer?
 const prereadBufferSz = 64
 
-func NewFileSource(path string) (Source[string], error) {
+func NewFileSource(path string) (*FileSource, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)

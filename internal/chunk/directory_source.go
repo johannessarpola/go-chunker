@@ -7,7 +7,8 @@ import (
 
 type DirectorySource struct {
 	dir         string
-	fileSources []Source[string]
+	fileSources []*FileSource
+	li          int64
 }
 
 func NewDirectorySource(dir string) (*DirectorySource, error) {
@@ -16,7 +17,7 @@ func NewDirectorySource(dir string) (*DirectorySource, error) {
 	if err != nil {
 		return nil, err
 	}
-	var sources []Source[string]
+	var sources []*FileSource
 	for _, entry := range de {
 		//
 		if entry.IsDir() { // skip directories
@@ -35,16 +36,19 @@ func NewDirectorySource(dir string) (*DirectorySource, error) {
 
 func (fd *DirectorySource) Next() (string, int64, bool) {
 
-	if len(fd.fileSources) > 0 {
-		for _, f := range fd.fileSources {
-			if s, l, ok := f.Next(); ok {
-				return s, l, true
-			} else {
-				fd.fileSources = fd.fileSources[1:]
-			}
-		}
+	if len(fd.fileSources) == 0 {
+		return "", -1, false
 	}
-	return "", -1, false
+	n := fd.fileSources[0]
+	n.SetIndex(fd.li)
+	d, idx, ok := n.Next()
+	fd.li = idx
+	if !ok {
+		fd.fileSources = fd.fileSources[1:]
+		return fd.Next()
+	}
+
+	return d, idx, ok
 }
 
 func (fd *DirectorySource) Total() (int64, error) {
