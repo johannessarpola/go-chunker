@@ -38,6 +38,11 @@ func (f *FileSource) Total() (int64, error) {
 	return rs.Get()
 }
 
+func ReadDir(folder string) (Source[string], error) {
+	// TODO
+	return nil, nil
+}
+
 func ReadFile(filename string) (Source[string], error) {
 	file, err := os.Open(filename)
 	if err != nil {

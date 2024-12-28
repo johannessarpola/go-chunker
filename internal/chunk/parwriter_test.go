@@ -15,13 +15,13 @@ func TestParWriter_Write(t *testing.T) {
 	o := Output{
 		Prefix: "data",
 		Dir:    "out",
-		Ext:    "txt",
+		Ext:    ".txt",
 	}
 
 	total, err := source.Total()
 	require.NoError(t, err)
 
-	workers := 10
+	workers := 4
 	pw := NewParWriter(workers, total)
 
 	err = pw.Run(source, o)

@@ -52,7 +52,8 @@ type writerMeta struct {
 // Run runs the worker, writes the output file and companion metadata json file. `onDone` is called when done and `ònErr` if there was an error.
 func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWorker, err error)) {
 	defer func() {
-		w.file.Close()
+		_ = w.writer.Flush()
+		_ = w.file.Close()
 		onComplete(w, nil)
 	}()
 	start := time.Now()
