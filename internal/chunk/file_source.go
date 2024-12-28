@@ -7,23 +7,14 @@ import (
 	"sync/atomic"
 )
 
-type Source[T any] interface {
-	Next() (T, int64, bool)
-	Total() (int64, error)
-}
-
-type Merger[T any] interface {
-	Merge(src ...Source[T])
-}
-
 type FileSource struct {
-	idx   atomic.Int64
-	fpath string
-	fread <-chan string
+	idx        atomic.Int64
+	filePath   string
+	fileReader <-chan string
 }
 
 func (f *FileSource) Next() (string, int64, bool) {
-	line, ok := <-f.fread
+	line, ok := <-f.fileReader
 	if !ok {
 		return "", -1, false
 	}
@@ -31,7 +22,7 @@ func (f *FileSource) Next() (string, int64, bool) {
 }
 
 func (f *FileSource) Total() (int64, error) {
-	rs := <-asyncCountLines(f.fpath)
+	rs := <-asyncCountLines(f.filePath)
 	return rs.Get()
 }
 
@@ -50,11 +41,6 @@ func (f *FileSource) Index() int64 {
 	return f.idx.Load()
 }
 
-func ReadDir(folder string) (Source[string], error) {
-	// TODO
-	return nil, nil
-}
-
 func preread(f *os.File, out chan<- string) {
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
@@ -67,18 +53,19 @@ func preread(f *os.File, out chan<- string) {
 // TODO configurable buffer?
 const prereadBufferSz = 64
 
-func ReadFile(filename string) (Source[string], error) {
-	file, err := os.Open(filename)
+func NewFileSource(path string) (Source[string], error) {
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)
 	}
 
-	fread := make(chan string, prereadBufferSz)
+	readChan := make(chan string, prereadBufferSz)
 	// Preread the file into a channel
-	go preread(file, fread)
+	go preread(file, readChan)
 
 	return &FileSource{
-		fpath: filename,
-		fread: fread,
+		idx:        atomic.Int64{},
+		filePath:   path,
+		fileReader: readChan,
 	}, nil
 }

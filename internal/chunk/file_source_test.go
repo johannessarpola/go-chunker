@@ -13,7 +13,7 @@ func TestReadFile(t *testing.T) {
 
 	require.NoError(t, rs.Err())
 
-	s, err := ReadFile(td)
+	s, err := NewFileSource(td)
 	require.NoError(t, err)
 
 	cnt := int64(0)
@@ -34,7 +34,7 @@ func TestReadDir(t *testing.T) {
 
 	require.NoError(t, rs.Err())
 
-	s, err := ReadFile(td)
+	s, err := NewFileSource(td)
 	require.NoError(t, err)
 
 	cnt := int64(0)

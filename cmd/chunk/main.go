@@ -44,7 +44,7 @@ func main() {
 			base := path.Base(input)
 			ext := path.Ext(input)
 
-			source, err := chunk.ReadFile(td)
+			source, err := chunk.NewFileSource(td)
 			if err != nil {
 				return err
 			}

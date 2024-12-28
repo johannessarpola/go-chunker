@@ -9,7 +9,7 @@ import (
 
 func TestParWriter_Write(t *testing.T) {
 	td := path.Join("testdata", "data.txt")
-	source, err := ReadFile(td)
+	source, err := NewFileSource(td)
 	require.NoError(t, err)
 
 	o := Output{
