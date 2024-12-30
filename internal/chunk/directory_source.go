@@ -3,12 +3,13 @@ package chunk
 import (
 	"fmt"
 	"os"
+	"sync/atomic"
 )
 
 type DirectorySource struct {
 	dir         string
 	fileSources []*FileSource
-	li          int64
+	idx         atomic.Int64
 }
 
 func NewDirectorySource(dir string) (*DirectorySource, error) {
@@ -19,7 +20,6 @@ func NewDirectorySource(dir string) (*DirectorySource, error) {
 	}
 	var sources []*FileSource
 	for _, entry := range de {
-		//
 		if entry.IsDir() { // skip directories
 			continue
 		}
@@ -34,21 +34,25 @@ func NewDirectorySource(dir string) (*DirectorySource, error) {
 	return &DirectorySource{dir: dir, fileSources: sources}, nil
 }
 
-func (fd *DirectorySource) Next() (string, int64, bool) {
+// Inc returns the index and then increments it.
+func (f *DirectorySource) Inc() int64 {
+	prev := f.idx.Load()
+	f.idx.Add(1)
+	return prev
+}
 
+func (fd *DirectorySource) Next() (string, int64, bool) {
 	if len(fd.fileSources) == 0 {
 		return "", -1, false
 	}
-	n := fd.fileSources[0]
-	n.SetIndex(fd.li)
-	d, idx, ok := n.Next()
-	fd.li = idx
+	// we ignore your index and substitute it with our own.
+	d, _, ok := fd.fileSources[0].Next()
 	if !ok {
 		fd.fileSources = fd.fileSources[1:]
 		return fd.Next()
 	}
 
-	return d, idx, ok
+	return d, fd.Inc(), ok
 }
 
 func (fd *DirectorySource) Total() (int64, error) {

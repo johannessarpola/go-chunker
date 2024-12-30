@@ -44,7 +44,18 @@ func main() {
 			base := path.Base(input)
 			ext := path.Ext(input)
 
-			source, err := chunk.NewFileSource(td)
+			isDir, err := chunk.IsDir(td)
+			if err != nil {
+				return err
+			}
+
+			var source chunk.Source[string]
+			if isDir {
+				source, err = chunk.NewDirectorySource(td)
+			} else {
+				source, err = chunk.NewFileSource(td)
+			}
+
 			if err != nil {
 				return err
 			}
