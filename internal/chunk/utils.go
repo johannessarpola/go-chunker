@@ -1,6 +1,10 @@
 package chunk
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
 
 func IsDir(path string) (bool, error) {
 	f, err := os.Open(path)
@@ -15,4 +19,20 @@ func IsDir(path string) (bool, error) {
 	}
 
 	return stat.IsDir(), nil
+}
+
+func GetFirstExtensionInDir(dir string) (string, error) {
+	de, err := os.ReadDir(dir)
+	if err != nil {
+		return "", err
+	}
+
+	for _, d := range de {
+		ext := filepath.Ext(d.Name())
+		if ext != "" {
+			return ext, nil
+		}
+	}
+
+	return "", fmt.Errorf("no file found in %s", dir)
 }

@@ -40,24 +40,36 @@ func main() {
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 
-			td := path.Join(input)
-			base := path.Base(input)
-			ext := path.Ext(input)
+			inputPath := path.Join(input)
+			var base, ext string
 
-			isDir, err := chunk.IsDir(td)
+			isDir, err := chunk.IsDir(inputPath)
 			if err != nil {
 				return err
 			}
 
 			var source chunk.Source[string]
 			if isDir {
-				source, err = chunk.NewDirectorySource(td)
-			} else {
-				source, err = chunk.NewFileSource(td)
-			}
 
-			if err != nil {
-				return err
+				base = path.Base(inputPath)
+				ext, err = chunk.GetFirstExtensionInDir(inputPath)
+				if err != nil {
+					return err
+				}
+
+				source, err = chunk.NewDirectorySource(inputPath)
+				if err != nil {
+					return err
+				}
+
+			} else {
+				base = path.Base(inputPath)
+				ext = path.Ext(inputPath)
+
+				source, err = chunk.NewFileSource(inputPath)
+				if err != nil {
+					return err
+				}
 			}
 
 			o := chunk.Output{
