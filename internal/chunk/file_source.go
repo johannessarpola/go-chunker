@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"sync/atomic"
+
+	"github.com/johannessarpola/gollections/result"
 )
 
 type FileSource struct {
@@ -24,6 +26,10 @@ func (f *FileSource) Next() (string, int64, bool) {
 func (f *FileSource) Total() (int64, error) {
 	rs := <-asyncCountLines(f.filePath)
 	return rs.Get()
+}
+
+func (f *FileSource) AsyncTotal() <-chan result.Result[int64] {
+	return asyncCountLines(f.filePath)
 }
 
 // Inc returns the index and then increments it.

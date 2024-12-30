@@ -3,6 +3,7 @@ package chunk
 import (
 	"fmt"
 	"os"
+	"sync"
 	"sync/atomic"
 )
 
@@ -56,15 +57,30 @@ func (fd *DirectorySource) Next() (string, int64, bool) {
 }
 
 func (fd *DirectorySource) Total() (int64, error) {
-	total := int64(0)
+	total := atomic.Int64{}
+	var err error
+	cancel := make(chan struct{}, 1)
+	wg := sync.WaitGroup{}
 	for _, fs := range fd.fileSources {
-		subtotal, err := fs.Total()
-		if err != nil {
-			return -1, fmt.Errorf("error getting total for file source: %s", err)
-		}
-		total += subtotal
+		wg.Add(1)
+		go func(fs *FileSource) {
+			defer wg.Done()
+			select {
+			case <-cancel:
+				return
+			case r := <-fs.AsyncTotal():
+				if r.Err() != nil {
+					err = fmt.Errorf("error getting total for file source: %s", r.Err())
+					cancel <- struct{}{}
+					return
+				}
+				total.Add(r.Value())
+			}
+		}(fs)
+
 	}
 
-	return total, nil
+	wg.Wait()
+	return total.Load(), err
 
 }

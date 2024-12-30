@@ -30,6 +30,7 @@ func asyncCountLines(filepath string) <-chan result.Result[int64] {
 		}
 
 		rs <- result.NewOk(lineCount)
+		close(rs)
 	}()
 	return rs
 }
