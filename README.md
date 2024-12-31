@@ -1,4 +1,4 @@
-# Chunk Processor Documentation
+# go-chunker
 
 ## Overview
 
