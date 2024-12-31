@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math"
 	"os"
@@ -14,6 +15,7 @@ import (
 )
 
 var version = ""
+var Verbose bool
 
 func getVersion() string {
 	info, ok := debug.ReadBuildInfo()
@@ -24,6 +26,17 @@ func getVersion() string {
 		return version
 	}
 	return info.Main.Version
+}
+
+func createOutputDir(path string) error {
+	verbosePrint("creating output dir %s\n", path)
+	return os.Mkdir(path, os.ModePerm)
+}
+
+func verbosePrint(format string, args ...any) {
+	if Verbose {
+		fmt.Printf(format, args...)
+	}
 }
 
 func main() {
@@ -54,6 +67,12 @@ func main() {
 				Aliases:     []string{"s"},
 				Destination: &size,
 			},
+			&cli.BoolFlag{
+				Name:        "verbose",
+				Usage:       "verbose",
+				Aliases:     []string{"v"},
+				Destination: &Verbose,
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 
@@ -62,6 +81,7 @@ func main() {
 
 			isDir, err := chunk.IsDir(inputPath)
 			if err != nil {
+				verbosePrint("could not check if input %s is directory or not\n", inputPath)
 				return err
 			}
 
@@ -71,11 +91,13 @@ func main() {
 				base = path.Base(inputPath)
 				ext, err = chunk.GetFirstExtensionInDir(inputPath)
 				if err != nil {
+					verbosePrint("could not get extension from input directory from %s\n", inputPath)
 					return err
 				}
 
 				source, err = chunk.NewDirectorySource(inputPath)
 				if err != nil {
+					verbosePrint("could not create directory source from %s\n", inputPath)
 					return err
 				}
 
@@ -85,10 +107,16 @@ func main() {
 
 				source, err = chunk.NewFileSource(inputPath)
 				if err != nil {
+					verbosePrint("could not create file source from %s\n", inputPath)
 					return err
 				}
 			}
 
+			err = createOutputDir(output)
+			if err != nil && err.Error() != "mkdir temp: file exists" {
+				verbosePrint("failed to create directory %s\n", output)
+				return err
+			}
 			o := chunk.Output{
 				Prefix: strings.Replace(base, ext, "", 1),
 				Dir:    output,
@@ -96,15 +124,19 @@ func main() {
 			}
 
 			total, err := source.Total()
+			verbosePrint("determined the total rows to be %d\n", total)
 			if err != nil {
+				verbosePrint("could not get total count from input %s\n", inputPath)
 				return err
 			}
 
 			workers := math.Ceil(float64(total) / float64(size))
 			pw := chunk.NewParWriter(int(workers), total)
 
+			verbosePrint("running writers for output files to directory %s with extension %s and prefix %s\n", o.Dir, o.Ext, o.Prefix)
 			err = pw.Run(source, o)
 			if err != nil {
+				verbosePrint("error running writers for output for %s with extension %s and prefix %s\n", o.Dir, o.Ext, o.Prefix)
 				return err
 			}
 			return nil

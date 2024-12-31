@@ -29,6 +29,7 @@ func TestParWriterFile(t *testing.T) {
 
 	err = pw.Run(source, o)
 	require.NoError(t, err)
+
 }
 
 func TestParWriterDirectory(t *testing.T) {
@@ -52,4 +53,5 @@ func TestParWriterDirectory(t *testing.T) {
 
 	err = pw.Run(source, o)
 	require.NoError(t, err)
+
 }
