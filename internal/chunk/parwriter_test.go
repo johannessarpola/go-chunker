@@ -13,8 +13,7 @@ func TestParWriterFile(t *testing.T) {
 	source, err := NewFileSource(td)
 	require.NoError(t, err)
 
-	err = os.Mkdir("out", os.ModeDir)
-	require.NoError(t, err)
+	_ = os.Mkdir("out", os.ModeDir)
 
 	o := Output{
 		Prefix: "data",
@@ -37,8 +36,7 @@ func TestParWriterDirectory(t *testing.T) {
 	source, err := NewDirectorySource(td)
 	require.NoError(t, err)
 
-	err = os.Mkdir("out", os.ModeDir)
-	require.NoError(t, err)
+	_ = os.Mkdir("out", os.ModeDir)
 
 	o := Output{
 		Prefix: "data",
