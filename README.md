@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Chunk Processor is a Go-based tool designed to split large input files or directories into smaller chunks based on the number of rows. This is particularly useful for processing large datasets in a manageable way. The tool supports both directory and file inputs and outputs the chunks to a specified directory. Additionally, it generates a meta JSON file for each output chunk, providing detailed information about the chunk.
+The chunker with Go is designed to split large input files or directories into smaller chunks based on the number of rows. This is particularly useful for splitting up larger data sets into smaller chunks.
 
 ## Installation
 
@@ -32,9 +32,10 @@ chunk -o out -i .in/products_chunk.csv -s 10000
 
 ### Command-Line Options
 
-- `-o` (output directory): Specifies the directory where the output chunks will be saved.
-- `-i` (input): Specifies the input file or directory to be processed.
-- `-s` (size): Specifies the number of rows for each chunk.
+- `-o` or `--output`: Specifies the directory where the output chunks will be saved.
+- `-i` or `--input`: Specifies the input file or directory to be processed.
+- `-s` or `--size`: Specifies the number of rows for each chunk.
+- `-h` or `--help`: Help for the CLI
 
 ### Example
 

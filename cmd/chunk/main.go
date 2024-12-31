@@ -6,17 +6,29 @@ import (
 	"math"
 	"os"
 	"path"
+	"runtime/debug"
 	"strings"
 
 	"github.com/johannessarpola/go-chunker/internal/chunk"
 	"github.com/urfave/cli/v3"
 )
 
+func getVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "unknown"
+	}
+	return info.Main.Version
+}
+
 func main() {
 	var input, output string
 	var size int64
 
 	cmd := &cli.Command{
+		Name:        "Chunk",
+		Version:     getVersion(),
+		Description: "Chunks the input directory or file into chunks",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "input",
