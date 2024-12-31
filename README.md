@@ -13,6 +13,10 @@ Once Go is installed, you can install the Chunk Processor using the following co
 ```sh
 go install cmd/chunk/main.go
 ```
+or 
+```sh
+go install github.com/johannessarpola/go-chunker/cmd/chunk@latest
+```
 
 ## Usage
 
