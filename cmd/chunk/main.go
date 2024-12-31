@@ -13,10 +13,15 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var version = ""
+
 func getVersion() string {
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
 		return "unknown"
+	}
+	if info.Main.Version == "" {
+		return version
 	}
 	return info.Main.Version
 }
@@ -26,9 +31,9 @@ func main() {
 	var size int64
 
 	cmd := &cli.Command{
-		Name:        "Chunk",
-		Version:     getVersion(),
-		Description: "Chunks the input directory or file into chunks",
+		Name:    "chunk",
+		Usage:   "Chunks the input directory or file into chunks",
+		Version: getVersion(),
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:        "input",
