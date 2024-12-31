@@ -8,7 +8,7 @@ The chunker with Go is designed to split large input files or directories into s
 
 To install the Chunk Processor, you need to have Go installed on your system. You can download and install Go from the official [Go website](https://golang.org/dl/).
 
-Once Go is installed, you can install the Chunk Processor using the following command:
+Once Go is installed, you can install the chunker using the following command:
 
 ```sh
 go install cmd/chunk/main.go
