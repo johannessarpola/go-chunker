@@ -2,7 +2,6 @@ package chunk
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path"
@@ -14,11 +13,11 @@ const metaSuffix = "meta"
 
 // WriteWorker writes messages from a `input` channel into a file.
 type WriteWorker struct {
-	id       int
-	file     *os.File
-	writer   *bufio.Writer
-	metaFile *os.File
-	input    <-chan Message
+	id           int
+	file         *os.File
+	writer       *bufio.Writer
+	metaFilePath string
+	input        <-chan Message
 }
 
 // NewWriteWorker creates a new WriteWorker and determines the output file names.
@@ -30,13 +29,8 @@ func NewWriteWorker(id int, input <-chan Message, output Output) (*WriteWorker, 
 		return nil, err
 	}
 
-	fmopen, err := os.Create(path.Join(output.Dir, mfname))
-	if err != nil {
-		return nil, err
-	}
-
 	buf := bufio.NewWriter(fopen)
-	return &WriteWorker{id: id, file: fopen, writer: buf, input: input, metaFile: fmopen}, nil
+	return &WriteWorker{id: id, file: fopen, writer: buf, input: input, metaFilePath: path.Join(output.Dir, mfname)}, nil
 }
 
 // writerMeta is the metadata for the worker.
@@ -47,6 +41,10 @@ type writerMeta struct {
 	Max            int64  `json:"max"`
 	AliveDuration  string `json:"alive_duration"`
 	ActiveDuration string `json:"active_duration"`
+}
+
+func (w *WriteWorker) OutputFIle() string {
+	return w.file.Name()
 }
 
 // Run runs the worker, writes the output file and companion metadata json file. `onDone` is called when done and `ònErr` if there was an error.
@@ -83,20 +81,13 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 }
 
 func (w *WriteWorker) writeMeta(mn, mx int64, start, activeStart, end time.Time) error {
-	defer w.metaFile.Close()
-
-	enc := json.NewEncoder(w.metaFile)
-	enc.SetIndent("", "    ")
-	err := enc.Encode(&writerMeta{
+	wm := writerMeta{
 		ID:             w.id,
 		Max:            mx,
 		Min:            mn,
 		File:           w.file.Name(),
 		AliveDuration:  time.Since(start).String(),
 		ActiveDuration: end.Sub(activeStart).String(),
-	})
-	if err != nil {
-		return err
 	}
-	return nil
+	return WriteJson(w.metaFilePath, true, &wm)
 }

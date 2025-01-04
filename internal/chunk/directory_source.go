@@ -35,6 +35,10 @@ func NewDirectorySource(dir string) (*DirectorySource, error) {
 	return &DirectorySource{dir: dir, fileSources: sources}, nil
 }
 
+func (f *DirectorySource) ID() string {
+	return f.dir
+}
+
 // Inc returns the index and then increments it.
 func (f *DirectorySource) Inc() int64 {
 	prev := f.idx.Load()

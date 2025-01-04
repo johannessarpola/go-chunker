@@ -1,6 +1,7 @@
 package chunk
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -35,4 +36,22 @@ func GetFirstExtensionInDir(dir string) (string, error) {
 	}
 
 	return "", fmt.Errorf("no file found in %s", dir)
+}
+
+func WriteJson(path string, pretty bool, data any) error {
+	f, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	enc := json.NewEncoder(f)
+	if pretty {
+		enc.SetIndent("", "    ")
+	}
+	err = enc.Encode(data)
+	if err != nil {
+		return err
+	}
+	return nil
 }

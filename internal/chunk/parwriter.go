@@ -2,12 +2,23 @@ package chunk
 
 import (
 	"fmt"
+	"path"
 	"sync"
 	"time"
 
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
 )
+
+type ParWriterMeta struct {
+	Source       string   `json:"source"`
+	OutputFiles  []string `json:"output_files"`
+	Duration     string   `json:"duration"`
+	Total        int64    `json:"total"`
+	Size         int64    `json:"size"`
+	NumWorkers   int      `json:"num_workers"`
+	NumArbitrers int      `json:"num_arbiters"`
+}
 
 type ParWriter struct {
 	workers int
@@ -41,6 +52,7 @@ func initializeWorkers(output Output, chans []chan Message) ([]*WriteWorker, err
 
 // TODO Fix the typings at some point
 func (np *ParWriter) Run(source Source[string], output Output) error {
+	start := time.Now()
 	chans := initializeChannels(np.workers)
 
 	writers, err := initializeWorkers(output, chans)
@@ -65,10 +77,9 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	wt := np.total / int64(len(writers))
 
 	for _, worker := range writers {
-		name := fmt.Sprintf("writer-%d:", worker.id)
 		bar := p.AddBar(wt,
 			mpb.PrependDecorators(
-				decor.Name(name, decor.WC{C: decor.DindentRight | decor.DextraSpace}),
+				decor.Name(worker.file.Name(), decor.WC{C: decor.DindentRight | decor.DextraSpace}),
 				decor.CountersNoUnit("%d / %d", decor.WCSyncWidth),
 			),
 			mpb.AppendDecorators(
@@ -94,6 +105,39 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	arbitrer.Run(wt, chans...)
 
 	p.Wait()
+	end := time.Now()
+
+	// Add a separte waitgroup for background tasks
+	bgtasks := &sync.WaitGroup{}
+	bgtasks.Add(1)
+
+	// Write the metadata file
+	go func() {
+		defer bgtasks.Done()
+
+		of := []string{}
+		for _, f := range writers {
+			of = append(of, f.OutputFIle())
+		}
+		pwm := ParWriterMeta{
+			Source:       source.ID(),
+			OutputFiles:  of,
+			Duration:     end.Sub(start).String(),
+			Total:        np.total,
+			Size:         wt,
+			NumWorkers:   np.workers,
+			NumArbitrers: arbiterCount,
+		}
+		op := path.Join(output.Dir, fmt.Sprintf("%s_meta.json", source.ID()))
+		err = WriteJson(op, true, &pwm)
+		if err != nil {
+			fmt.Println("Error writing meta data to file", err)
+		}
+	}()
+
+	// Wait for all the tasks to finish
+	bgtasks.Wait()
+
 	return nil
 
 }

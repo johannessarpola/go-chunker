@@ -4,6 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path"
+	"strings"
 	"sync/atomic"
 
 	"github.com/johannessarpola/gollections/result"
@@ -21,6 +23,11 @@ func (f *FileSource) Next() (string, int64, bool) {
 		return "", -1, false
 	}
 	return line, f.Inc(), true
+}
+
+func (f *FileSource) ID() string {
+	ext := path.Ext(f.filePath)
+	return strings.Replace(path.Base(f.filePath), ext, "", -1)
 }
 
 func (f *FileSource) Total() (int64, error) {

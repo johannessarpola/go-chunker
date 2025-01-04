@@ -1,6 +1,7 @@
 package chunk
 
 type Source[T any] interface {
+	ID() string
 	Next() (T, int64, bool)
 	Total() (int64, error)
 }
