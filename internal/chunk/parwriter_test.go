@@ -25,7 +25,7 @@ func TestParWriterFile(t *testing.T) {
 	require.NoError(t, err)
 
 	workers := 10
-	pw := NewParWriter(workers, total)
+	pw := NewParWriter(workers, total, true)
 
 	err = pw.Run(source, o)
 	require.NoError(t, err)
@@ -49,7 +49,7 @@ func TestParWriterDirectory(t *testing.T) {
 	require.NoError(t, err)
 
 	workers := 10
-	pw := NewParWriter(workers, total)
+	pw := NewParWriter(workers, total, true)
 
 	err = pw.Run(source, o)
 	require.NoError(t, err)
