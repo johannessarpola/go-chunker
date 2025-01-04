@@ -31,7 +31,7 @@ chunk -o out -i .in/dir -s 10000
 ### For File Input
 
 ```sh
-chunk -o out -i .in/products_chunk.csv -s 10000
+chunk -o out -i .in/products_chunk.csv -s 10000 -m
 ```
 
 ### Command-Line Options
@@ -39,6 +39,7 @@ chunk -o out -i .in/products_chunk.csv -s 10000
 - `-o` or `--output`: Specifies the directory where the output chunks will be saved.
 - `-i` or `--input`: Specifies the input file or directory to be processed.
 - `-s` or `--size`: Specifies the number of rows for each chunk.
+- `-m` or `--meta`: Output the metadata of the chunks
 - `-h` or `--help`: Help for the CLI
 
 ### Example
@@ -66,7 +67,7 @@ The tool supports two types of input:
 
 ### Output Handling
 
-The output chunks are saved in the specified output directory. Each chunk is named sequentially (e.g., `chunk1`, `chunk2`, etc.). Additionally, for each chunk, a corresponding meta JSON file is generated with the following structure:
+The output chunks are saved in the specified output directory. Each chunk is named sequentially (e.g., `chunk1`, `chunk2`, etc.). Additionally, for each chunk, a corresponding meta JSON file is generated with the following structure if `-m` flag is set:
 
 ```json
 {
