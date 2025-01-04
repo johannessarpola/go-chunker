@@ -14,6 +14,7 @@ const metaSuffix = "meta"
 // WriteWorker writes messages from a `input` channel into a file.
 type WriteWorker struct {
 	id           int
+	meta         bool // if true, write metadata to separate file
 	file         *os.File
 	writer       *bufio.Writer
 	metaFilePath string
@@ -21,7 +22,7 @@ type WriteWorker struct {
 }
 
 // NewWriteWorker creates a new WriteWorker and determines the output file names.
-func NewWriteWorker(id int, input <-chan Message, output Output) (*WriteWorker, error) {
+func NewWriteWorker(id int, input <-chan Message, output Output, meta bool) (*WriteWorker, error) {
 	fname := fmt.Sprintf("%s_%d%s", output.Prefix, id, output.Ext)
 	mfname := fmt.Sprintf("%s_%d_%s.%s", output.Prefix, id, metaSuffix, metaExt)
 	fopen, err := os.Create(path.Join(output.Dir, fname))
@@ -30,7 +31,7 @@ func NewWriteWorker(id int, input <-chan Message, output Output) (*WriteWorker, 
 	}
 
 	buf := bufio.NewWriter(fopen)
-	return &WriteWorker{id: id, file: fopen, writer: buf, input: input, metaFilePath: path.Join(output.Dir, mfname)}, nil
+	return &WriteWorker{id: id, file: fopen, writer: buf, input: input, metaFilePath: path.Join(output.Dir, mfname), meta: meta}, nil
 }
 
 // writerMeta is the metadata for the worker.
@@ -74,9 +75,11 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 	}
 
 	end := time.Now()
-	err := w.writeMeta(mn, mx, start, active, end)
-	if err != nil {
-		fmt.Printf("error writing metadata; %e", err)
+	if w.meta {
+		err := w.writeMeta(mn, mx, start, active, end)
+		if err != nil {
+			fmt.Printf("error writing metadata; %e", err)
+		}
 	}
 }
 

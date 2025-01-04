@@ -23,10 +23,11 @@ type ParWriterMeta struct {
 type ParWriter struct {
 	workers int
 	total   int64
+	meta    bool
 }
 
-func NewParWriter(workers int, total int64) *ParWriter {
-	return &ParWriter{workers: workers, total: total}
+func NewParWriter(workers int, total int64, meta bool) *ParWriter {
+	return &ParWriter{workers: workers, total: total, meta: meta}
 }
 
 func initializeChannels(workers int) []chan Message {
@@ -37,11 +38,11 @@ func initializeChannels(workers int) []chan Message {
 	return channels
 }
 
-func initializeWorkers(output Output, chans []chan Message) ([]*WriteWorker, error) {
+func initializeWorkers(output Output, chans []chan Message, meta bool) ([]*WriteWorker, error) {
 	writers := make([]*WriteWorker, len(chans))
 	var err error
 	for i, c := range chans {
-		writers[i], err = NewWriteWorker(i, c, output)
+		writers[i], err = NewWriteWorker(i, c, output, meta)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create writer: %w", err)
 		}
@@ -55,7 +56,7 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 	start := time.Now()
 	chans := initializeChannels(np.workers)
 
-	writers, err := initializeWorkers(output, chans)
+	writers, err := initializeWorkers(output, chans, np.meta)
 	if err != nil {
 		return fmt.Errorf("failed to create workers: %w", err)
 	}
@@ -109,31 +110,34 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 
 	// Add a separte waitgroup for background tasks
 	bgtasks := &sync.WaitGroup{}
-	bgtasks.Add(1)
 
-	// Write the metadata file
-	go func() {
-		defer bgtasks.Done()
+	if np.meta {
+		bgtasks.Add(1)
 
-		of := []string{}
-		for _, f := range writers {
-			of = append(of, f.OutputFIle())
-		}
-		pwm := ParWriterMeta{
-			Source:       source.ID(),
-			OutputFiles:  of,
-			Duration:     end.Sub(start).String(),
-			Total:        np.total,
-			Size:         wt,
-			NumWorkers:   np.workers,
-			NumArbitrers: arbiterCount,
-		}
-		op := path.Join(output.Dir, fmt.Sprintf("%s_meta.json", source.ID()))
-		err = WriteJson(op, true, &pwm)
-		if err != nil {
-			fmt.Println("Error writing meta data to file", err)
-		}
-	}()
+		// Write the metadata file
+		go func() {
+			defer bgtasks.Done()
+
+			of := []string{}
+			for _, f := range writers {
+				of = append(of, f.OutputFIle())
+			}
+			pwm := ParWriterMeta{
+				Source:       source.ID(),
+				OutputFiles:  of,
+				Duration:     end.Sub(start).String(),
+				Total:        np.total,
+				Size:         wt,
+				NumWorkers:   np.workers,
+				NumArbitrers: arbiterCount,
+			}
+			op := path.Join(output.Dir, fmt.Sprintf("%s_meta.json", source.ID()))
+			err = WriteJson(op, true, &pwm)
+			if err != nil {
+				fmt.Println("Error writing meta data to file", err)
+			}
+		}()
+	}
 
 	// Wait for all the tasks to finish
 	bgtasks.Wait()

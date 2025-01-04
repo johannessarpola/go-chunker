@@ -42,6 +42,7 @@ func verbosePrint(format string, args ...any) {
 func main() {
 	var input, output string
 	var size int64
+	var meta bool
 
 	cmd := &cli.Command{
 		Name:    "chunk",
@@ -66,6 +67,13 @@ func main() {
 				Usage:       "size of chunk",
 				Aliases:     []string{"s"},
 				Destination: &size,
+			},
+			&cli.BoolFlag{
+				Name:        "meta",
+				Usage:       "meta",
+				Aliases:     []string{"m"},
+				Value:       false,
+				Destination: &meta,
 			},
 			&cli.BoolFlag{
 				Name:        "verbose",
@@ -131,7 +139,7 @@ func main() {
 			}
 
 			workers := math.Ceil(float64(total) / float64(size))
-			pw := chunk.NewParWriter(int(workers), total)
+			pw := chunk.NewParWriter(int(workers), total, meta)
 
 			verbosePrint("running writers for output files to directory %s with extension %s and prefix %s\n", o.Dir, o.Ext, o.Prefix)
 			err = pw.Run(source, o)
