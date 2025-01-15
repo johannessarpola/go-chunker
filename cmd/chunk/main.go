@@ -132,7 +132,8 @@ func main() {
 			}
 
 			total, err := source.Total()
-			verbosePrint("determined the total rows to be %d\n", total)
+			verbosePrint("total count from input %s is %d\n", inputPath, total)
+
 			if err != nil {
 				verbosePrint("could not get total count from input %s\n", inputPath)
 				return err
