@@ -33,7 +33,7 @@ func NewParWriter(workers int, total int64, meta bool) *ParWriter {
 func initializeChannels(workers int) []chan Message {
 	channels := make([]chan Message, workers)
 	for i := 0; i < workers; i++ {
-		channels[i] = make(chan Message, 1)
+		channels[i] = make(chan Message, 1024)
 	}
 	return channels
 }
@@ -90,11 +90,10 @@ func (np *ParWriter) Run(source Source[string], output Output) error {
 			),
 		)
 
-		start := time.Now()
 		// run the writer
 		go worker.Run(
 			func(m *Message) {
-				bar.EwmaIncrement(time.Since(start))
+				bar.Increment()
 			},
 			func(w *WriteWorker, err error) {
 				//fmt.Printf("worker %d done, wrote to %s\n", w.id, w.file.Name())

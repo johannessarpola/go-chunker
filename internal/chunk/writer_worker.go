@@ -67,7 +67,10 @@ func (w *WriteWorker) Run(onHandled func(m *Message), onComplete func(w *WriteWo
 		if mn < 0 {
 			mn = m.idx
 		}
-		if _, err := w.writer.Write(append(m.msg, '\n')); err != nil {
+		if _, err := w.writer.Write(m.msg); err != nil {
+			break
+		}
+		if err := w.writer.WriteByte('\n'); err != nil {
 			break
 		}
 		onHandled(&m)
