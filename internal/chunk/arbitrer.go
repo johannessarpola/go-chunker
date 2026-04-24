@@ -20,28 +20,25 @@ func NewArbitrer(workers int, source Source[string]) *Arbitrer {
 func (a *Arbitrer) Run(total int64, chans ...chan Message) {
 	channelCount := len(chans)
 	wg := sync.WaitGroup{}
-	wg.Add(a.workers)
+	wg.Add(1)
 
-	for range a.workers {
-		go func() {
-			defer wg.Done()
-			for {
-				val, idx, ok := a.source.Next()
-				if !ok {
-					return
-				}
-				// dst determines the correct channel to send the message so the order is not shuffled.
-				// For example with idx = 0 it would end in the first channel.
-				dst := int(idx / total)
-				// TODO ugly fix, figure out later
-				if dst >= channelCount {
-					dst = channelCount - 1
-				}
-				chans[dst] <- NewMessage(idx, []byte(val))
+	go func() {
+		defer wg.Done()
+		for {
+			val, idx, ok := a.source.Next()
+			if !ok {
+				return
 			}
-
-		}()
-	}
+			// dst determines the correct channel to send the message so the order is not shuffled.
+			// For example with idx = 0 it would end in the first channel.
+			dst := int(idx / total)
+			// TODO ugly fix, figure out later
+			if dst >= channelCount {
+				dst = channelCount - 1
+			}
+			chans[dst] <- NewMessage(idx, []byte(val))
+		}
+	}()
 
 	wg.Wait()
 	for _, c := range chans {
